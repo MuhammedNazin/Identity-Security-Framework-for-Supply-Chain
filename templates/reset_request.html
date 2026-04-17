@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container" style="display: flex; justify-content: center; align-items: center; min-height: 80vh;">
+    <div style="background: var(--kf-surface); padding: 3rem; border-radius: 1rem; border: 1px solid var(--kf-border); width: 100%; max-width: 450px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+        <h2 style="font-size: 1.5rem; margin-bottom: 0.5rem; color: var(--kf-primary);">Credential Override</h2>
+        <p style="color: var(--kf-text-muted); font-size: 0.85rem; margin-bottom: 2rem;">Identify yourself to initiate an enclave password reset.</p>
+        
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="form-group" style="text-align: left; margin-bottom: 1.5rem;">
+                <label style="color: var(--kf-text); display: block; margin-bottom: 0.5rem;">Registered Email</label>
+                <input type="email" name="email" class="input-field" placeholder="operations@network.com" required style="width: 100%;">
+            </div>
+            
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Initialize Identity Search</button>
+        </form>
+
+        <div style="margin-top: 1.5rem; font-size: 0.8rem;">
+            <a href="{{ url_for('login') }}" style="color: var(--kf-text-muted); text-decoration: none;">◄ Abort Process</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

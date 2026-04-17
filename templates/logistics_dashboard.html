@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="ghost-transition">
+    <!-- ═══ Vault Security Alert ═══ -->
+    {% if not current_user.is_2fa_enabled %}
+    <div style="background: rgba(251, 191, 36, 0.05); border: 2px solid var(--accent-gold); padding: 1.5rem; margin-bottom: 3rem; display: flex; justify-content: space-between; align-items: center; position: relative; overflow: hidden;">
+        <div style="display: flex; align-items: center; gap: 1.5rem;">
+            <div class="mono" style="font-size: 1.5rem; color: var(--accent-gold);">⚡</div>
+            <div>
+                <div class="mono" style="font-weight: 800; color: var(--accent-gold); font-size: 0.8rem;">[!] VAULT_SECURITY_BREACH_RISK</div>
+                <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.2rem;">Multi-Factor Authentication (TOTP) is not active. Harden your access key immediately.</div>
+            </div>
+        </div>
+        <a href="{{ url_for('setup_2fa') }}" class="btn btn-primary" style="background: var(--accent-gold); color: #000; padding: 0.5rem 1rem; font-size: 0.7rem;">Initialize Hardening</a>
+    </div>
+    {% endif %}
+
+    <script>
+        // Automatic Real-Time Data Sync 
+        setTimeout(() => {
+            window.location.reload();
+        }, 30000);
+    </script>
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 3rem;">
+        <div>
+            <h1 style="color: var(--accent-cyan); font-size: 2.5rem; line-height: 1;">Transit Nexus</h1>
+            <p class="mono" style="color: var(--accent-gold); margin-top: 0.5rem; font-size: 0.75rem;">// NODE: GLOBAL_ROUTING_STATION_01</p>
+        </div>
+        <div class="mono" style="text-align: right; font-size: 0.7rem; color: var(--text-secondary);">
+            LAT: 52.5200° N<br>
+            LONG: 13.4050° E
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+        <div class="tile" style="border-left: 4px solid var(--accent-cyan);">
+            <h3 class="mono" style="font-size: 0.7rem; color: var(--text-secondary);">IN_TRANSIT_VECTOR</h3>
+            <div class="mono" style="font-size: 2.5rem; font-weight: 700; color: var(--accent-cyan);">{{ moving|default(0, true) }}</div>
+        </div>
+        <div class="tile" style="border-left: 4px solid var(--error);">
+            <h3 class="mono" style="font-size: 0.7rem; color: var(--text-secondary);">IMPEDANCE_DETECTED</h3>
+            <div class="mono" style="font-size: 2.5rem; font-weight: 700; color: var(--error);">{{ delayed|default(0, true) }}</div>
+        </div>
+        <div class="tile" style="border-left: 4px solid var(--accent-gold);">
+            <h3 class="mono" style="font-size: 0.7rem; color: var(--text-secondary);">TERMINATED_SUCCESS</h3>
+            <div class="mono" style="font-size: 2.5rem; font-weight: 700; color: var(--accent-gold);">{{ delivered|default(0, true) }}</div>
+        </div>
+    </div>
+
+    <div style="margin-top: 4rem;">
+        <h3 style="margin-bottom: 2rem; color: var(--text-primary); border-bottom: 2px solid var(--border-machined); padding-bottom: 0.5rem;">Live tracking manifest</h3>
+        
+        <div class="manifest-grid">
+            {% for cargo in manifest %}
+            <div class="tile" {% if cargo.status == 'Held' %}style="border-color: var(--error);"{% endif %}>
+                <div class="badge" style="position: absolute; top: 0; right: 0; {% if cargo.status == 'Held' %}background: var(--error);{% else %}background: var(--accent-cyan);{% endif %}">{{ cargo.status|upper }}</div>
+                <div class="mono" style="font-size: 0.6rem; color: var(--accent-cyan); margin-bottom: 0.5rem;">TRK_ID: {{ cargo.tracking_number }}</div>
+                <h4 style="margin-bottom: 0.5rem;">{{ cargo.origin }} -> {{ cargo.destination }}</h4>
+                <div class="mono" style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 1.5rem;">
+                    ITEM: {{ cargo.item_name }}<br>
+                    QTY: {{ cargo.quantity }}
+                </div>
+                <div style="display: flex; gap: 0.5rem;">
+                    <form action="{{ url_for('update_status', cargo_id=cargo.id) }}" method="POST" style="flex: 1;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <input type="hidden" name="status" value="Delivered"/>
+                        <button type="submit" class="btn btn-primary" style="width: 100%; font-size: 0.6rem;">Mark Delivered</button>
+                    </form>
+                    {% if cargo.status != 'Held' %}
+                    <form action="{{ url_for('update_status', cargo_id=cargo.id) }}" method="POST" style="flex: 1;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <input type="hidden" name="status" value="Held"/>
+                        <button type="submit" class="btn btn-logout" style="width: 100%; font-size: 0.6rem;">Intercept/Hold</button>
+                    </form>
+                    {% else %}
+                    <form action="{{ url_for('update_status', cargo_id=cargo.id) }}" method="POST" style="flex: 1;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <input type="hidden" name="status" value="In Transit"/>
+                        <button type="submit" class="btn btn-outline" style="width: 100%; font-size: 0.6rem; color: var(--accent-cyan); border-color: var(--accent-cyan);">Resume Transit</button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+            {% else %}
+            <div class="mono" style="color: var(--text-secondary); grid-column: 1 / -1;">NO_ACTIVE_TRANSIT_VECTORS</div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

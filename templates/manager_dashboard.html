@@ -1,0 +1,289 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="ghost-transition">
+    <!-- ═══ Vault Security Alert ═══ -->
+    {% if not current_user.is_2fa_enabled %}
+    <div style="background: rgba(251, 191, 36, 0.05); border: 2px solid var(--accent-gold); padding: 1.5rem; margin-bottom: 3rem; display: flex; justify-content: space-between; align-items: center; position: relative; overflow: hidden;">
+        <div style="display: flex; align-items: center; gap: 1.5rem;">
+            <div class="mono" style="font-size: 1.5rem; color: var(--accent-gold);">⚡</div>
+            <div>
+                <div class="mono" style="font-weight: 800; color: var(--accent-gold); font-size: 0.8rem;">[!] VAULT_SECURITY_BREACH_RISK</div>
+                <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.2rem;">Multi-Factor Authentication (TOTP) is not active. Harden your access key immediately.</div>
+            </div>
+        </div>
+        <a href="{{ url_for('setup_2fa') }}" class="btn btn-primary" style="background: var(--accent-gold); color: #000; padding: 0.5rem 1rem; font-size: 0.7rem;">Initialize Hardening</a>
+    </div>
+    {% endif %}
+
+    <script>
+        // Automatic Real-Time Data Sync (Pauses if Edit Modal is open)
+        setTimeout(() => {
+            const modal = document.getElementById('editModal');
+            if (!modal || modal.style.display === 'none') {
+                window.location.reload();
+            } else {
+                // If they are editing, wait until they close it
+                setInterval(() => {
+                   if (document.getElementById('editModal').style.display === 'none') {
+                       window.location.reload();
+                   }
+                }, 10000);
+            }
+        }, 30000);
+    </script>
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 3rem;">
+        <div>
+            <h1 style="color: var(--accent-cyan); font-size: 2.5rem; line-height: 1;">Operations Command</h1>
+            <p class="mono" style="color: var(--accent-gold); margin-top: 0.5rem; font-size: 0.75rem;">// ACCESS_LEVEL: ADMINISTRATIVE_OVERRIDE</p>
+        </div>
+        <div class="mono" style="text-align: right; font-size: 0.7rem; color: var(--text-secondary);">
+            REGION: NORTH_AMERICA_HQ<br>
+            SECURITY_KEY: {{ current_user.id * 1337 }}
+        </div>
+    </div>
+
+    <!-- Global Logistics Command Center -->
+    <div style="margin-top: 3rem; display: grid; grid-template-columns: 2fr 1fr; gap: 2rem;">
+        <!-- Interactive Logistics Map -->
+        <div class="tile" style="padding: 0; overflow: hidden; height: 500px; position: relative; border: 1px solid var(--border-machined);">
+            <div id="logisticsMap" style="width: 100%; height: 100%; z-index: 1; filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);"></div>
+            <div style="position: absolute; top: 1rem; left: 1rem; z-index: 1000; background: rgba(10,11,16,0.8); padding: 0.5rem 1rem; border: 1px solid var(--accent-cyan); pointer-events: none;">
+                <h4 class="mono" style="font-size: 0.7rem; color: var(--accent-cyan);">// VECTOR_FLOW_ANALYSIS</h4>
+                <p style="font-size: 0.6rem; color: var(--text-secondary);">Real-time shipment origin/destination mapping</p>
+            </div>
+        </div>
+
+        <!-- Secondary Analytics -->
+        <div style="display: flex; flex-direction: column; gap: 2rem;">
+            <div class="tile" style="flex: 1; border-top: 2px solid var(--accent-gold);">
+                <h4 class="mono" style="font-size: 0.7rem; color: var(--accent-gold); margin-bottom: 1.5rem;">// NETWORK_HEALTH</h4>
+                <div style="height: 150px;">
+                    <canvas id="efficiencyChart"></canvas>
+                </div>
+            </div>
+            <div class="tile" style="flex: 1; border-top: 2px solid var(--text-primary);">
+                <h4 class="mono" style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 1.5rem;">// INVENTORY_DISTRIBUTION</h4>
+                <div style="height: 150px;">
+                    <canvas id="inventoryChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize Industrial Map
+            const map = L.map('logisticsMap', {
+                zoomControl: false,
+                attributionControl: false
+            }).setView([30, 0], 2);
+
+            // High-Contrast Basemap
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                subdomains: 'abcd',
+                maxZoom: 19
+            }).addTo(map);
+
+            async function renderLiveVectors() {
+                try {
+                    const response = await fetch('/api/logistics/flows');
+                    const data = await response.json();
+                    
+                    data.shipments.forEach(flow => {
+                        const start = flow.origin;
+                        const end = flow.destination;
+
+                        // Origin Marker
+                        L.circleMarker(start, {
+                            radius: 4, color: '#00f0ff', fillColor: '#00f0ff', fillOpacity: 0.8
+                        }).addTo(map);
+
+                        // Destination Marker
+                        L.circleMarker(end, {
+                            radius: 4, color: '#ff0055', fillColor: '#ff0055', fillOpacity: 0.8
+                        }).addTo(map);
+
+                        // Vector Line
+                        const line = L.polyline([start, end], {
+                            color: '#00f0ff',
+                            weight: 2,
+                            opacity: 0.4,
+                            dashArray: '5, 10'
+                        }).addTo(map);
+
+                        // Animated Pulse along line
+                        const pulse = L.circleMarker(start, {
+                            radius: 3, color: '#fff', fillColor: '#fff', fillOpacity: 1
+                        }).addTo(map);
+
+                        // Calculate simple animation
+                        let frame = 0;
+                        const animate = () => {
+                            frame = (frame + 1) % 100;
+                            const lat = start[0] + (end[0] - start[0]) * (frame / 100);
+                            const lng = start[1] + (end[1] - start[1]) * (frame / 100);
+                            pulse.setLatLng([lat, lng]);
+                            requestAnimationFrame(animate);
+                        };
+                        animate();
+                    });
+                } catch (e) {
+                    console.error("Vector Synch Error:", e);
+                }
+            }
+
+            renderLiveVectors();
+            // Refresh vectors every 30s
+            setInterval(renderLiveVectors, 30000);
+
+            // Efficiency Chart
+            const effCtx = document.getElementById('efficiencyChart');
+            const efficiencyChart = new Chart(effCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        data: [],
+                        borderColor: '#00f2ff',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        pointRadius: 0,
+                        fill: true,
+                        backgroundColor: 'rgba(0, 242, 255, 0.05)'
+                    }]
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    plugins: { legend: { display: false } },
+                    scales: { y: { display: false }, x: { display: false } }
+                }
+            });
+
+            // Inventory Chart
+            const invCtx = document.getElementById('inventoryChart');
+            new Chart(invCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Asia', 'EU', 'NA', 'AU'],
+                    datasets: [{
+                        data: [65, 42, 88, 31],
+                        backgroundColor: ['#00f2ff', '#ffd700', '#ffffff', '#334155'],
+                        borderRadius: 10
+                    }]
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    plugins: { legend: { display: false } },
+                    scales: { y: { display: false }, x: { display: false } }
+                }
+            });
+
+            async function updateTelemetry() {
+                try {
+                    const response = await fetch('/api/network-telemetry');
+                    const data = await response.json();
+                    
+                    if (efficiencyChart.data.labels.length > 20) {
+                        efficiencyChart.data.labels.shift();
+                        efficiencyChart.data.datasets[0].data.shift();
+                    }
+                    efficiencyChart.data.labels.push(data.timestamp);
+                    efficiencyChart.data.datasets[0].data.push(data.efficiency);
+                    efficiencyChart.update('none');
+                } catch (e) {}
+            }
+            setInterval(updateTelemetry, 3000);
+            updateTelemetry();
+        });
+    </script>
+
+    <div style="margin-top: 4rem;">
+        <h3 style="margin-bottom: 2rem; color: var(--text-primary); border-bottom: 2px solid var(--border-machined); padding-bottom: 0.5rem;">Approval Manifesting</h3>
+        
+        <div class="manifest-grid">
+            {% for cargo in pending %}
+            <div class="tile">
+                <div class="mono" style="font-size: 0.6rem; color: var(--accent-cyan); margin-bottom: 0.5rem;">TRK_ID: {{ cargo.tracking_number }}</div>
+                <h4 style="margin-bottom: 0.5rem;">{{ cargo.supplier.username|default('Supplier', true) }} -> {{ cargo.destination }}</h4>
+                <div class="mono" style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 1.5rem;">
+                    ITEM: {{ cargo.item_name }}<br>
+                    QTY: {{ cargo.quantity }} | ORIGIN: {{ cargo.origin }}
+                </div>
+                <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+                    <form action="{{ url_for('authorize_cargo', cargo_id=cargo.id) }}" method="POST" style="flex: 1;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <button type="submit" class="btn btn-primary" style="width: 100%; font-size: 0.6rem;">Authorize</button>
+                    </form>
+                    <form action="{{ url_for('deny_cargo', cargo_id=cargo.id) }}" method="POST" style="flex: 1;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <button type="submit" class="btn btn-logout" style="width: 100%; font-size: 0.6rem;">Deny</button>
+                    </form>
+                </div>
+                <button class="btn btn-outline" style="width: 100%; font-size: 0.6rem;" onclick="openEditModal('{{ cargo.id }}', '{{ cargo.quantity }}', '{{ cargo.destination }}')">Edit Parameters</button>
+            </div>
+            {% else %}
+            <div class="mono" style="color: var(--text-secondary); grid-column: 1 / -1;">NO_PENDING_APPROVALS</div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="editModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(10,11,16,0.9); z-index: 2000; justify-content: center; align-items: center; backdrop-filter: blur(5px);">
+        <div class="tile" style="width: 100%; max-width: 500px; position: relative;">
+            <button onclick="document.getElementById('editModal').style.display='none'" style="position: absolute; right: 1rem; top: 1rem; background: none; border: none; color: var(--text-secondary); cursor: pointer; font-family: monospace; font-size: 1.2rem;">X</button>
+            <h3 style="margin-bottom: 1.5rem; color: var(--accent-cyan);">Administrative Override</h3>
+            <form id="editForm" action="" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; font-size: 0.75rem; margin-bottom: 0.5rem;">OVERRIDE QUANTITY</label>
+                    <input type="number" id="editQuantity" name="quantity" class="nm-input" required style="width: 100%; padding: 0.75rem; background: rgba(255,255,255,0.05); border: 1px solid var(--border-machined); color: var(--text-primary);">
+                </div>
+                <div style="margin-bottom: 2rem;">
+                    <label style="display: block; font-size: 0.75rem; margin-bottom: 0.5rem;">REROUTE DESTINATION</label>
+                    <select id="editDestination" name="destination" class="nm-input" style="width: 100%; padding: 0.75rem; background: rgba(255,255,255,0.05); border: 1px solid var(--border-machined); color: var(--text-primary);">
+                        <option value="New York" style="color: black;">New York</option>
+                        <option value="London" style="color: black;">London</option>
+                        <option value="Tokyo" style="color: black;">Tokyo</option>
+                        <option value="Berlin" style="color: black;">Berlin</option>
+                        <option value="Singapore" style="color: black;">Singapore</option>
+                        <option value="Mumbai" style="color: black;">Mumbai</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Confirm Override</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openEditModal(id, currentQty, currentDest) {
+            document.getElementById('editForm').action = "/manager/edit/" + id;
+            document.getElementById('editQuantity').value = currentQty;
+            document.getElementById('editDestination').value = currentDest;
+            document.getElementById('editModal').style.display = 'flex';
+        }
+    </script>
+
+    <div style="margin-top: 4rem; margin-bottom: 4rem;">
+        <h3 style="margin-bottom: 2rem; color: var(--text-primary); border-bottom: 2px solid var(--border-machined); padding-bottom: 0.5rem;">Delivered Manifests</h3>
+        
+        <div class="manifest-grid">
+            {% for cargo in completed %}
+            <div class="tile" style="border-color: var(--accent-cyan);">
+                <div class="mono" style="font-size: 0.6rem; color: var(--accent-cyan); margin-bottom: 0.5rem;">TRK_ID: {{ cargo.tracking_number }}</div>
+                <h4 style="margin-bottom: 0.5rem;">{{ cargo.item_name }}</h4>
+                <div class="mono" style="font-size: 0.75rem; color: var(--text-secondary);">
+                    ROUTE: {{ cargo.origin }} -> {{ cargo.destination }}<br>
+                    TS: {{ cargo.updated_at.strftime('%Y-%m-%d %H:%M') }}
+                </div>
+            </div>
+            {% else %}
+            <div class="mono" style="color: var(--text-secondary); grid-column: 1 / -1;">NO_DELIVERED_VECTORS</div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+

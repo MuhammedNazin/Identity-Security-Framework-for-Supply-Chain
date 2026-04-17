@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="max-width: 450px; margin: 4rem auto;">
+    <div class="card">
+        <h2 style="text-align: center;">Two-Factor Verification</h2>
+        <p style="text-align: center; color: #94a3b8; margin-bottom: 2rem;">Please enter the 6-digit code from your authenticator app to complete the login process.</p>
+        
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="form-group">
+                <label for="otp_code">Verification Code</label>
+                <input type="text" id="otp_code" name="otp_code" placeholder="123456" maxlength="6" required style="text-align: center; font-size: 1.5rem; letter-spacing: 5px;" autofocus>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Complete Secure Sign-In</button>
+        </form>
+
+        <div class="auth-links">
+            Cant access your app? <a href="{{ url_for('logout') }}">Sign out and try later</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

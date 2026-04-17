@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container" style="display: flex; justify-content: center; align-items: center; min-height: 80vh;">
+    <div style="background: var(--kf-surface); padding: 3rem; border-radius: 1rem; border: 1px solid var(--kf-warning); width: 100%; max-width: 450px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+        <h2 style="font-size: 1.5rem; margin-bottom: 0.5rem; color: var(--kf-warning);">Fallback Authentication Protocol</h2>
+        <p style="color: var(--kf-text-muted); font-size: 0.85rem; margin-bottom: 2rem;">No hardware token found. To verify access authority, confirm these fragments of your previous key.</p>
+        
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="form-group" style="text-align: left; margin-bottom: 1.5rem;">
+                <label style="color: var(--kf-text); display: block; margin-bottom: 0.5rem;">Enter the <span style="color: var(--kf-primary);">first 2 characters</span> of your previous password:</label>
+                <input type="text" name="prefix" class="input-field" required maxlength="2" placeholder="e.g. He" style="width: 100%;">
+            </div>
+            
+            <div class="form-group" style="text-align: left; margin-bottom: 1.5rem;">
+                <label style="color: var(--kf-text); display: block; margin-bottom: 0.5rem;">Enter the <span style="color: var(--kf-primary);">last 2 characters</span> of your previous password:</label>
+                <input type="text" name="suffix" class="input-field" required maxlength="2" placeholder="e.g. x!" style="width: 100%;">
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; background: var(--kf-warning); color: #000;">Authorize Fragments</button>
+        </form>
+
+        <div style="margin-top: 1.5rem; font-size: 0.8rem;">
+            <a href="{{ url_for('login') }}" style="color: var(--kf-text-muted); text-decoration: none;">◄ Abort Process</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="ghost-transition">
+    <!-- ═══ Vault Security Alert ═══ -->
+    {% if not current_user.is_2fa_enabled %}
+    <div style="background: rgba(251, 191, 36, 0.05); border: 2px solid var(--accent-gold); padding: 1.5rem; margin-bottom: 3rem; display: flex; justify-content: space-between; align-items: center; position: relative; overflow: hidden;">
+        <div style="display: flex; align-items: center; gap: 1.5rem;">
+            <div class="mono" style="font-size: 1.5rem; color: var(--accent-gold);">⚡</div>
+            <div>
+                <div class="mono" style="font-weight: 800; color: var(--accent-gold); font-size: 0.8rem;">[!] VAULT_SECURITY_BREACH_RISK</div>
+                <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.2rem;">Multi-Factor Authentication (TOTP) is not active. Harden your access key immediately.</div>
+            </div>
+        </div>
+        <a href="{{ url_for('setup_2fa') }}" class="btn btn-primary" style="background: var(--accent-gold); color: #000; padding: 0.5rem 1rem; font-size: 0.7rem;">Initialize Hardening</a>
+    </div>
+    {% endif %}
+
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 3rem;">
+        <div>
+            <h1 style="color: var(--accent-cyan); font-size: 2.5rem; line-height: 1;">Supplier HUD</h1>
+            <p class="mono" style="color: var(--accent-gold); margin-top: 0.5rem; font-size: 0.75rem;">// ACTIVE_SESSION: SECURE_INVENTORY_PORT</p>
+        </div>
+        <div class="mono" style="text-align: right; font-size: 0.7rem; color: var(--text-secondary);">
+            SYSTEM_UPTIME: 142:12:05<br>
+            ENCRYPTION: AES-256-GCM
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+        <div class="tile" style="border-left: 4px solid var(--accent-cyan);">
+            <h3 class="mono" style="font-size: 0.7rem; color: var(--text-secondary);">LIVE_SHIPMENTS</h3>
+            <div class="mono" style="font-size: 2.5rem; font-weight: 700; color: var(--accent-cyan);">12</div>
+            <div style="height: 2px; background: var(--border-machined); margin: 1rem 0;"></div>
+            <div class="mono" style="font-size: 0.6rem; color: var(--text-secondary);">SYNC_STATUS: OPTIMAL</div>
+        </div>
+        <div class="tile" style="border-left: 4px solid var(--accent-gold);">
+            <h3 class="mono" style="font-size: 0.7rem; color: var(--text-secondary);">CRITICAL_STOCK_ALERTS</h3>
+            <div class="mono" style="font-size: 2.5rem; font-weight: 700; color: var(--accent-gold);">03</div>
+            <div style="height: 2px; background: var(--border-machined); margin: 1rem 0;"></div>
+            <div class="mono" style="font-size: 0.6rem; color: var(--accent-gold);">ACTION_REQUIRED: IMMEDIATE</div>
+        </div>
+        <div class="tile" style="border-left: 4px solid var(--text-primary);">
+            <h3 class="mono" style="font-size: 0.7rem; color: var(--text-secondary);">PENDING_REQUISITIONS</h3>
+            <div class="mono" style="font-size: 2.5rem; font-weight: 700; color: var(--text-primary);">08</div>
+            <div style="height: 2px; background: var(--border-machined); margin: 1rem 0;"></div>
+            <div class="mono" style="font-size: 0.6rem; color: var(--text-secondary);">QUEUE_LOAD: NOMINAL</div>
+        </div>
+    </div>
+
+    <div style="margin-top: 4rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border-machined); padding-bottom: 0.5rem; margin-bottom: 2rem;">
+            <h3 style="color: var(--text-primary);">Inventory Manifest</h3>
+            <button class="btn btn-primary" onclick="document.getElementById('dispatchModal').style.display='flex'">+ Dispatch Cargo</button>
+        </div>
+        
+        <div class="manifest-grid">
+            {% for cargo in shipments %}
+            <div class="tile" style="position: relative; {% if cargo.status == 'Delivered' %}border-color: var(--accent-cyan);{% elif cargo.status == 'Held' %}border-color: var(--accent-gold);{% endif %}">
+                <div class="badge" style="position: absolute; top: 0; right: 0; {% if cargo.status == 'Delivered' %}background: var(--accent-cyan);{% elif cargo.status == 'Held' %}background: var(--accent-gold);{% endif %}">
+                    {{ cargo.status|upper }}
+                </div>
+                <div class="mono" style="font-size: 0.6rem; color: var(--text-secondary); margin-bottom: 0.5rem;">TRK: {{ cargo.tracking_number }}</div>
+                <h4 style="margin-bottom: 0.5rem;">{{ cargo.item_name }}</h4>
+                <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 1rem;">
+                    From: {{ cargo.origin }}<br>To: {{ cargo.destination }}
+                </div>
+                <div class="mono" style="font-size: 0.8rem; background: rgba(0,0,0,0.3); padding: 0.5rem; border: 1px solid var(--border-machined);">
+                    QTY: {{ cargo.quantity }} | {{ cargo.weight }}kg
+                </div>
+            </div>
+            {% else %}
+            <div class="mono" style="color: var(--text-secondary);">NO_ACTIVE_MANIFESTS_FOUND</div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Dispatch Modal -->
+<div id="dispatchModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(10,11,16,0.9); z-index: 2000; justify-content: center; align-items: center; backdrop-filter: blur(5px);">
+    <div class="tile" style="width: 100%; max-width: 500px; position: relative;">
+        <button onclick="document.getElementById('dispatchModal').style.display='none'" style="position: absolute; right: 1rem; top: 1rem; background: none; border: none; color: var(--text-secondary); cursor: pointer; font-family: monospace; font-size: 1.2rem;">X</button>
+        <h3 style="margin-bottom: 1.5rem; color: var(--accent-cyan);">Initialize Dispatch Sequence</h3>
+        <form action="{{ url_for('dispatch_shipment') }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem;">ITEM IDENTIFIER</label>
+                <input type="text" name="item_name" class="nm-input" required style="width: 100%; padding: 0.75rem; background: rgba(255,255,255,0.05); border: 1px solid var(--border-machined); color: var(--text-primary); font-family: monospace;" placeholder="e.g. Critical Med Supplies">
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                <div>
+                    <label style="display: block; font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem;">ORIGIN HUB</label>
+                    <select name="origin" class="nm-input" style="width: 100%; padding: 0.75rem; background: rgba(255,255,255,0.05); border: 1px solid var(--border-machined); color: var(--text-primary);">
+                        <option value="New York" style="color: black;">New York</option>
+                        <option value="London" style="color: black;">London</option>
+                        <option value="Tokyo" style="color: black;">Tokyo</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem;">DESTINATION HUB</label>
+                    <select name="destination" class="nm-input" style="width: 100%; padding: 0.75rem; background: rgba(255,255,255,0.05); border: 1px solid var(--border-machined); color: var(--text-primary);">
+                        <option value="Berlin" style="color: black;">Berlin</option>
+                        <option value="Singapore" style="color: black;">Singapore</option>
+                        <option value="Mumbai" style="color: black;">Mumbai</option>
+                    </select>
+                </div>
+            </div>
+            <div style="margin-bottom: 2rem;">
+                <label style="display: block; font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem;">QUANTITY</label>
+                <input type="number" name="quantity" class="nm-input" min="1" value="1" required style="width: 100%; padding: 0.75rem; background: rgba(255,255,255,0.05); border: 1px solid var(--border-machined); color: var(--text-primary); font-family: monospace;">
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Authorize Dispatch</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

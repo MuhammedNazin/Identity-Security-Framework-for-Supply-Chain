@@ -1,0 +1,12 @@
+Flask
+Flask-SQLAlchemy
+Flask-Login
+Flask-WTF
+Flask-Talisman
+Flask-Limiter
+cryptography
+pyotp
+qrcode
+Authlib
+python-dotenv
+requests

@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supply Chain Identity Framework</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        :root {
+            --bg-color: #0a0b10;
+            --surface: #161b22;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-cyan: #60a5fa;
+            --accent-gold: #fbbf24;
+            --error: #f87171;
+            --border: rgba(255, 255, 255, 0.08);
+            --border-machined: rgba(255, 255, 255, 0.15);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg-color);
+            background-image: 
+                linear-gradient(rgba(96, 165, 250, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(96, 165, 250, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+            letter-spacing: -0.01em;
+        }
+
+        .ghost-transition {
+            animation: ghost-fade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes ghost-fade {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        nav {
+            padding: 1.25rem 2.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(10, 11, 16, 0.95);
+            border-bottom: 2px solid var(--border-machined);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .logo {
+            font-family: 'Inter', sans-serif;
+            font-weight: 800;
+            font-size: 1.25rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--accent-cyan);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .logo::before {
+            content: '';
+            width: 12px;
+            height: 12px;
+            background: var(--accent-gold);
+            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 3rem auto;
+            padding: 0 1.5rem;
+            flex-grow: 1;
+        }
+
+        .card {
+            background: var(--surface);
+            border: 2px solid var(--border-machined);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            padding: 2.5rem;
+        }
+
+        /* Scanner Animation */
+        .card::after {
+            content: '';
+            position: absolute;
+            top: -100%;
+            left: 0;
+            width: 100%;
+            height: 50px;
+            background: linear-gradient(to bottom, transparent, rgba(96, 165, 250, 0.2), transparent);
+            animation: scan 6s infinite linear;
+            pointer-events: none;
+        }
+
+        @keyframes scan {
+            0% { top: -100%; }
+            20% { top: 100%; }
+            100% { top: 100%; }
+        }
+
+        .mono { font-family: 'JetBrains Mono', monospace; }
+
+        h1, h2, h3 {
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.75rem 1.5rem;
+            font-weight: 700;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            text-decoration: none;
+            border: 2px solid transparent;
+        }
+
+        .btn-primary {
+            background: var(--accent-cyan);
+            color: #000;
+        }
+
+        .btn-primary:hover {
+            transform: scale(1.02);
+            filter: brightness(1.1);
+        }
+
+        .btn-outline {
+            border-color: var(--border-machined);
+            color: var(--text-primary);
+        }
+
+        .btn-outline:hover {
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+        }
+
+        .btn-logout {
+            border-color: var(--error);
+            color: var(--error);
+        }
+
+        .btn-logout:hover {
+            background: var(--error);
+            color: #000;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: var(--accent-gold);
+            font-weight: 700;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            background: #0d1117;
+            border: 2px solid var(--border-machined);
+            color: var(--accent-cyan);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 15px rgba(96, 165, 250, 0.15);
+        }
+
+        .flash-messages {
+            margin-bottom: 2rem;
+        }
+
+        .flash {
+            padding: 1rem;
+            border-left: 4px solid;
+            background: rgba(255, 255, 255, 0.03);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 0.75rem;
+        }
+
+        .flash.error { border-color: var(--error); color: var(--error); }
+        .flash.success { border-color: var(--accent-cyan); color: var(--accent-cyan); }
+
+        /* Manifest Tiles 3D Effect */
+        .manifest-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 2rem;
+            perspective: 1000px;
+        }
+
+        .tile {
+            background: var(--surface);
+            border: 2px solid var(--border-machined);
+            padding: 1.5rem;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+        }
+
+        .tile:hover {
+            transform: translateZ(20px) scale(1.05);
+            border-color: var(--accent-gold);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.6);
+            z-index: 10;
+        }
+
+        .badge {
+            background: var(--accent-gold);
+            color: #000;
+            padding: 0.2rem 0.5rem;
+            font-size: 0.65rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 800;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="logo">SC Identity Framework</div>
+        <div>
+            {% if current_user.is_authenticated %}
+                <span style="margin-right: 1rem; font-size: 0.875rem; color: #94a3b8;">
+                    Logged in as <b>{{ current_user.username }}</b> 
+                    <span class="badge badge-role">{{ current_user.role }}</span>
+                </span>
+                <a href="{{ url_for('setup_2fa') }}" class="btn" style="background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2); margin-right: 0.5rem; padding: 0.5rem 1rem; font-size: 0.75rem;">
+                    {% if current_user.is_2fa_enabled %}🔒 2FA Enabled{% else %}🔓 Enable 2FA{% endif %}
+                </a>
+                <a href="{{ url_for('logout') }}" class="btn btn-logout">Logout</a>
+            {% else %}
+                <a href="{{ url_for('login') }}" class="btn btn-primary" style="margin-right: 0.5rem;">Login</a>
+                <a href="{{ url_for('signup') }}" class="btn" style="background: rgba(255,255,255,0.05);">Sign Up</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="flash {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <footer style="padding: 2rem; text-align: center; color: #475569; font-size: 0.75rem;">
+        <div>&copy; 2026 Supply Chain Identity Framework. Secure Authentication & Authorization Demo.</div>
+        {% if current_user.is_authenticated %}
+        <div style="margin-top: 0.5rem; font-size: 0.65rem; opacity: 0.7;">
+            <a href="{{ url_for('setup_2fa') }}" style="color: var(--accent-cyan); text-decoration: none;">Security Credential Portal (MFA Sync)</a>
+        </div>
+        {% endif %}
+    </footer>
+</body>
+</html>
